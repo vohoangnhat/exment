@@ -16,9 +16,9 @@
         }
     ],
     "require": {
-        "php": ">=7.2.0",
-        "exceedone/laravel-admin": "~2.0",
-        "laravel/framework": "~6.20",
+        "php": "^8.0.0",
+        "exceedone/laravel-admin": "dev-feature/php8_laravel8",
+        "laravel/framework": "^8.0",
         "laravelcollective/html": "~6.2",
         "laravel/helpers": "~1.4",
         "webpatser/laravel-uuid": "^3.0",
