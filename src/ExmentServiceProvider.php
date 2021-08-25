@@ -161,9 +161,9 @@ class ExmentServiceProvider extends ServiceProvider
             'admin.password-limit',
             'admin.morph',
             'admin.bootstrap2',
-            'laravel-page-speed.space',
+            //'laravel-page-speed.space',
             //'laravel-page-speed.jscomments',
-            'laravel-page-speed.comments',
+            //'laravel-page-speed.comments',
             'admin.pjax',
             'admin.log',
             'admin.bootstrap',
@@ -218,7 +218,8 @@ class ExmentServiceProvider extends ServiceProvider
             'admin.morph',
             'admin.log',
             // 'throttle:60,1',
-            'bindings',
+            // 'bindings',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
         // Exment Plugin API
         'pluginapi' => [
@@ -230,7 +231,8 @@ class ExmentServiceProvider extends ServiceProvider
             // 'throttle:60,1',
             'admin.morph',
             'admin.log',
-            'bindings',
+            // 'bindings',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
         // Extends web middleware If call exment's parts by user, please Add
         'exment_web' => [
