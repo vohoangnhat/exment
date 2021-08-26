@@ -33,7 +33,7 @@
         "kylekatarnls/update-helper": "^1.2"
     },
     "require-dev": {
-        "symfony/css-selector": "~4.2",
+        "symfony/css-selector": "~5.2",
         "laravel/browser-kit-testing": "~5.2",
         "dms/phpunit-arraysubset-asserts": "~0.1"
     },
