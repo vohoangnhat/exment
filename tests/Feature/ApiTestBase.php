@@ -98,7 +98,7 @@ abstract class ApiTestBase extends TestCase
     {
         $response = $this->getPasswordToken('admin', 'adminadmin', $scope);
 
-        return array_get(json_decode($response->baseResponse->getContent(), true), 'access_token');
+        return array_get(json_decode_ex($response->baseResponse->getContent(), true), 'access_token');
     }
     
     /**
@@ -110,7 +110,7 @@ abstract class ApiTestBase extends TestCase
     {
         $response = $this->getApiKey($scope);
 
-        return array_get(json_decode($response->baseResponse->getContent(), true), 'access_token');
+        return array_get(json_decode_ex($response->baseResponse->getContent(), true), 'access_token');
     }
     
     /**
@@ -122,7 +122,7 @@ abstract class ApiTestBase extends TestCase
     {
         $response = $this->getPasswordToken('user1', 'user1user1', $scope);
 
-        return array_get(json_decode($response->baseResponse->getContent(), true), 'access_token');
+        return array_get(json_decode_ex($response->baseResponse->getContent(), true), 'access_token');
     }
     
     /**
@@ -134,7 +134,7 @@ abstract class ApiTestBase extends TestCase
     {
         $response = $this->getPasswordToken('user2', 'user2user2', $scope);
 
-        return array_get(json_decode($response->baseResponse->getContent(), true), 'access_token');
+        return array_get(json_decode_ex($response->baseResponse->getContent(), true), 'access_token');
     }
     
     /**
@@ -146,7 +146,7 @@ abstract class ApiTestBase extends TestCase
     {
         $response = $this->getPasswordToken($userid, $password, $scope);
 
-        return array_get(json_decode($response->baseResponse->getContent(), true), 'access_token');
+        return array_get(json_decode_ex($response->baseResponse->getContent(), true), 'access_token');
     }
     
     /**
@@ -173,7 +173,7 @@ abstract class ApiTestBase extends TestCase
      */
     protected function assertJsonTrue($response, $arrays)
     {
-        $json = json_decode($response->baseResponse->getContent(), true);
+        $json = json_decode_ex($response->baseResponse->getContent(), true);
         $this->assertJsonTrueFunc([], $arrays, $json);
     }
 
