@@ -631,7 +631,7 @@ class TemplateImporter
     {
         System::clearCache();
         
-        DB::transaction(function () use ($json, $system_flg, $is_update, $fromExcel) {
+        DB::transaction(function ($conn) use ($json, $system_flg, $is_update, $fromExcel) {
             // tables for default form and views
             $createDefaultTables = [];
 
@@ -760,6 +760,10 @@ class TemplateImporter
             foreach ($createDefaultTables as $createDefaultTable) {
                 CustomForm::getDefault($createDefaultTable);
                 CustomView::getAllData($createDefaultTable);
+            }
+
+            if (!($conn->getPdo()->inTransaction())) {
+                $conn->setPdo($conn->getPdo());
             }
         });
 
