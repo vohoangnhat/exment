@@ -756,7 +756,7 @@ class CCustomColumnTest extends ExmentKitTestCase
             ->seeInField('options[required]', 0)
             ->seeInField('options[help]', '選択肢のヘルプ')
             ->seeInField('options[default]', 0)
-            ->seeInField('options[select_item]', '選択1'."\n".'選択2'."\n".'選択3')
+            ->seeInField('options[select_item]', '選択1 選択2 選択3')
 ;
         $form = [
             'column_view_name' => 'Select Column Update',
@@ -815,7 +815,7 @@ class CCustomColumnTest extends ExmentKitTestCase
             ->seeInField('options[help]', '選択肢（値と見出し）のヘルプ')
             ->seeInField('options[default]', 0)
             ->seeInField('options[multiple_enabled]', 0)
-            ->seeInField('options[select_item_valtext]', '0,低い'."\n".'1,通常'."\n".'2,高い')
+            ->seeInField('options[select_item_valtext]', '0,低い 1,通常 2,高い')
 ;
         $form = [
             'column_view_name' => 'Select Value Text Column Update',

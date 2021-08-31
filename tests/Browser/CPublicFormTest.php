@@ -522,9 +522,7 @@ class CPublicFormTest extends ExmentKitTestCase
             // ->seeIsSelected('notify_actions_error[??][notify_action]', '1')
             // ->seeIsSelected('notify_actions_error[??][notify_action_target]', ['administrator', 'fixed_email'])
             // ->seeInField('notify_actions_error[??][target_emails]', 'unittest@mail.co.jp')
-            ->seeInField('css_js_setting[custom_css]', 'h1 {
-                color:red !important;
-            }')
+            ->seeInField('css_js_setting[custom_css]', 'h1 { color:red !important; }')
             ->seeIsSelected('css_js_setting[plugin_css][]', $this->getStylePluginId())
             ->seeInField('css_js_setting[custom_js]', 'alert("unit test");')
             ->seeIsSelected('css_js_setting[plugin_js][]', $this->getScriptPluginId())
