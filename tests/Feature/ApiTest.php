@@ -49,7 +49,7 @@ class ApiTest extends ApiTestBase
         $response = $this->getPasswordToken('adjfjke', 'adjfjkeadjfjkeadjfjkeadjfjke');
         
         $response
-            ->assertStatus(401);
+            ->assertStatus(400);
     }
     
     public function testErrorNoToken()
