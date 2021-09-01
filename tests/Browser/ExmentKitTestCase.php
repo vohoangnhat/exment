@@ -7,6 +7,7 @@ use Exceedone\Exment\Tests\TestTrait;
 use Exceedone\Exment\Model\LoginUser;
 use Exceedone\Exment\Model\System;
 use Laravel\BrowserKitTesting\TestCase as BaseTestCase;
+use Exceedone\Exment\Tests\DatabaseTransactions;
 
 abstract class ExmentKitTestCase extends BaseTestCase
 {
@@ -80,5 +81,21 @@ abstract class ExmentKitTestCase extends BaseTestCase
     public function containsSelectOptions($element, array $options, $negate = false)
     {
         return $this->assertInPage(new Constraints\ContainsSelectOption($element, $options), $negate);
+    }
+
+    /**
+     * Boot the testing helper traits.
+     *
+     * @return array
+     */
+    protected function setUpTraits()
+    {
+        $uses = parent::setUpTraits();
+
+        if (isset($uses[DatabaseTransactions::class])) {
+            $this->beginDatabaseTransaction();
+        }
+
+        return $uses;
     }
 }
