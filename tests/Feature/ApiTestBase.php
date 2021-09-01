@@ -12,10 +12,9 @@ use Exceedone\Exment\Enums\ApiScope;
 use Exceedone\Exment\Tests\TestTrait;
 use Exceedone\Exment\Tests\TestDefine;
 
-abstract class ApiTestBase extends TestCase
+abstract class ApiTestBase extends FeatureTestBase
 {
-    use TestTrait;
-    
+   
     /**
      * Get Client Id and Secret
      *

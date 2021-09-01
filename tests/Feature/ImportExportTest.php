@@ -3,7 +3,7 @@
 namespace Exceedone\Exment\Tests\Feature;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Exceedone\Exment\Tests\DatabaseTransactions;
 use Illuminate\Support\Collection;
 use Exceedone\Exment\Model;
 use Exceedone\Exment\Model\CustomTable;
@@ -16,7 +16,7 @@ use Exceedone\Exment\Enums\ColumnType;
 use Exceedone\Exment\Tests\TestDefine;
 use Exceedone\Exment\Tests\TestTrait;
 
-class ImportExportTest extends TestCase
+class ImportExportTest extends FeatureTestBase
 {
     use ImportTrait, TestTrait, DatabaseTransactions;
 

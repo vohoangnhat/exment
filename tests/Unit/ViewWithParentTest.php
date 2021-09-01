@@ -18,7 +18,7 @@ use Encore\Admin\Grid;
 /**
  * Custom view include parent or select table column test.
  */
-class ViewWithParentTest extends TestCase
+class ViewWithParentTest extends UnitTestBase
 {
     use TestTrait, CustomViewTrait, DatabaseTransactions;
 
@@ -50,7 +50,7 @@ class ViewWithParentTest extends TestCase
         $array = $this->getColumnFilterData(function ($data, $custom_view) use ($filter_column, $filter_value) {
             if ($data instanceof CustomValue) {
                 $parent = $data->getParentValue();
-                return $parent->getValue($filter_column) == $filter_value;
+                return $parent?->getValue($filter_column) == $filter_value;
             } else {
                 $column_item = $custom_view->custom_view_columns[0]->column_item;
                 $unique_name = $column_item->uniqueName();
@@ -83,7 +83,7 @@ class ViewWithParentTest extends TestCase
                 $data = getModelName(TestDefine::TESTDATA_TABLE_NAME_CHILD_TABLE)::find($id);
             }
             $parent = $data->getParentValue();
-            return $parent->getValue($filter_column) == $filter_value;
+            return $parent?->getValue($filter_column) == $filter_value;
         }, $options);
     }
 
@@ -109,7 +109,7 @@ class ViewWithParentTest extends TestCase
         $array = $this->getColumnFilterData(function ($data, $custom_view) use ($filter_column, $filter_value) {
             if ($data instanceof CustomValue) {
                 $parent = $data->getParentValue();
-                return $parent->getValue($filter_column) == $filter_value;
+                return $parent?->getValue($filter_column) == $filter_value;
             } else {
                 $column_item = $custom_view->custom_view_columns[0]->column_item;
                 $unique_name = $column_item->uniqueName();
@@ -275,7 +275,7 @@ class ViewWithParentTest extends TestCase
         $array = $this->getColumnFilterData(function ($data, $custom_view) use ($filter_column, $filter_value) {
             if ($data instanceof CustomValue) {
                 $select_table = $data->getValue('select_table');
-                return $select_table->getValue($filter_column) == $filter_value;
+                return $select_table?->getValue($filter_column) == $filter_value;
             } else {
                 $column_item = $custom_view->custom_view_columns[0]->column_item;
                 $unique_name = $column_item->uniqueName();
@@ -310,7 +310,7 @@ class ViewWithParentTest extends TestCase
                 $data = getModelName(TestDefine::TESTDATA_TABLE_NAME_ALL_COLUMNS_FORTEST)::find($id);
             }
             $select_table = $data->getValue('select_table');
-            return $select_table->getValue($filter_column) == $filter_value;
+            return $select_table?->getValue($filter_column) == $filter_value;
         }, $options);
     }
 
@@ -426,7 +426,7 @@ class ViewWithParentTest extends TestCase
         $array = $this->getColumnFilterData(function ($prev_data, $data, $custom_view) use ($select_table, $sort_column) {
             $prev_select = $select_table::find(array_get($prev_data, 'value.select_table'));
             $select = $select_table::find(array_get($data, 'value.select_table'));
-            return $prev_select->getValue($sort_column) <= $select->getValue($sort_column);
+            return $prev_select?->getValue($sort_column) <= $select?->getValue($sort_column);
         }, $options);
     }
 
@@ -511,7 +511,7 @@ class ViewWithParentTest extends TestCase
                     return false;
                 }
                 $select = $data->getValue('user');
-                return strpos($select->getValue('user_name'), 'user') === 0;
+                return strpos($select?->getValue('user_name'), 'user') === 0;
             } else {
                 $column_item = $custom_view->custom_view_columns[0]->column_item;
                 $unique_name = $column_item->uniqueName();
@@ -549,8 +549,8 @@ class ViewWithParentTest extends TestCase
             }
             $parent = $data->getParentValue();
             $user = $data->getValue('user');
-            return strpos($user->getValue('user_name'), 'user') !== 0 &&
-                $parent->getValue('text') != 'test_2';
+            return strpos($user?->getValue('user_name'), 'user') !== 0 &&
+                $parent?->getValue('text') != 'test_2';
         }, $options);
     }
 
@@ -684,11 +684,11 @@ class ViewWithParentTest extends TestCase
             $user = $data->getValue('user');
             $prev_user = $prev_data->getValue('user');
 
-            if ($prev_parent->getValue('index_text') > $parent->getValue('index_text')) {
+            if ($prev_parent?->getValue('index_text') > $parent?->getValue('index_text')) {
                 return true;
             }
-            return $prev_parent->getValue('index_text') == $parent->getValue('index_text') &&
-                $prev_user->getValue('user_name') <= $user->getValue('user_name');
+            return $prev_parent?->getValue('index_text') == $parent?->getValue('index_text') &&
+                $prev_user?->getValue('user_name') <= $user?->getValue('user_name');
         }, $options);
     }
 
@@ -793,9 +793,9 @@ class ViewWithParentTest extends TestCase
                 $child = $data->getValue('child');
                 $child_view = $data->getValue('child_view');
                 $child_ajax = $data->getValue('child_ajax');
-                return $child->getValue('odd_even') == 'odd'
-                    && $child_view->getValue('odd_even') == 'even'
-                    && $child_ajax->getValue('odd_even') == 'odd';
+                return $child?->getValue('odd_even') == 'odd'
+                    && $child_view?->getValue('odd_even') == 'even'
+                    && $child_ajax?->getValue('odd_even') == 'odd';
             } else {
                 $column_item = $custom_view->custom_view_columns[0]->column_item;
                 $unique_name = $column_item->uniqueName();
@@ -841,9 +841,9 @@ class ViewWithParentTest extends TestCase
             $child = $data->getValue('child');
             $child_view = $data->getValue('child_view');
             $child_ajax = $data->getValue('child_ajax');
-            return $child->getValue('odd_even') == 'even'
-                && $child_view->getValue('odd_even') == 'odd'
-                && $child_ajax->getValue('odd_even') == 'even';
+            return $child?->getValue('odd_even') == 'even'
+                && $child_view?->getValue('odd_even') == 'odd'
+                && $child_ajax?->getValue('odd_even') == 'even';
         }, $options);
     }
 
@@ -1020,19 +1020,19 @@ class ViewWithParentTest extends TestCase
             $prev_child_view = $prev_data->getValue('child_view');
             $child_ajax = $data->getValue('child_ajax');
             $prev_child_ajax = $prev_data->getValue('child_ajax');
-            if ($prev_child->getValue('date') > $child->getValue('date')) {
+            if ($prev_child?->getValue('date') > $child?->getValue('date')) {
                 return true;
             }
-            if ($prev_child->getValue('date') < $child->getValue('date')) {
+            if ($prev_child?->getValue('date') < $child?->getValue('date')) {
                 return false;
             }
-            if ($prev_child_view->getValue('date') < $child_view->getValue('date')) {
+            if ($prev_child_view?->getValue('date') < $child_view?->getValue('date')) {
                 return true;
             }
-            if ($prev_child_view->getValue('date') > $child_view->getValue('date')) {
+            if ($prev_child_view?->getValue('date') > $child_view?->getValue('date')) {
                 return false;
             }
-            return $prev_child_ajax->getValue('date') <= $child_ajax->getValue('date');
+            return $prev_child_ajax?->getValue('date') <= $child_ajax?->getValue('date');
         }, $options);
     }
 
