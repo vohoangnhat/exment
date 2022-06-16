@@ -6,6 +6,8 @@ use Exceedone\Exment\Model\CustomValue;
 
 /**
  * Plugin (Event) trait
+ *
+ * @property boolean $isDelete
  */
 trait PluginEventTrait
 {
@@ -41,6 +43,8 @@ trait PluginEventTrait
         if (isset($options['notify'])) {
             $this->notify = $options['notify'];
         }
-        $this->isCreate = is_nullorempty($custom_value) || $custom_value->wasRecentlyCreated;
+        $this->isCreate = is_nullorempty($this->custom_value) || $this->custom_value->wasRecentlyCreated;
+        $this->isDelete = !is_nullorempty($this->custom_value) &&
+            (isset($this->custom_value->deleted_user_id) || isset($this->custom_value->deleted_at));
     }
 }

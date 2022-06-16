@@ -4,6 +4,7 @@ namespace Exceedone\Exment\Model;
 
 use Exceedone\Exment\Auth\HasPermissions;
 use Exceedone\Exment\Providers\LoginUserProvider;
+use Exceedone\Exment\Enums\SystemColumn;
 use Exceedone\Exment\Enums\SystemTableName;
 use Encore\Admin\Traits\AdminBuilder;
 use Laravel\Passport\HasApiTokens;
@@ -57,6 +58,31 @@ class LoginUser extends ModelBase implements \Illuminate\Contracts\Auth\Authenti
     public function getNameAttribute()
     {
         return $this->base_user->value['user_name'] ?? null;
+    }
+
+    /**
+     * Get header user info.
+     *
+     * @return string
+     */
+    public function getHeaderInfo()
+    {
+        $headers = [];
+        foreach (System::header_user_info() as $field) {
+            if ($field == SystemColumn::CREATED_AT) {
+                $title = exmtrans('common.created_at');
+                $value = $this->base_user->created_at;
+            } else {
+                $column = CustomColumn::find($field);
+                if (!isset($column)) {
+                    continue;
+                }
+                $title = $column->column_view_name;
+                $value = $this->base_user->getValue($column->column_name, true);
+            }
+            $headers[] = exmtrans('common.format_keyvalue', $title, $value);
+        }
+        return implode('<br />', $headers);
     }
 
     /**
@@ -190,10 +216,32 @@ class LoginUser extends ModelBase implements \Illuminate\Contracts\Auth\Authenti
         System::clearRequestSession("user_setting");
     }
 
+    /**
+     * Clear setting value
+     *
+     * @param string $key
+     * @return UserSetting
+     */
+    public function forgetSettingValue($key)
+    {
+        if (is_null($this->base_user)) {
+            return null;
+        }
+        // set User Setting table
+        $usersetting = UserSetting::firstOrCreate(['base_user_id' => $this->getUserId()]);
+        $usersetting->forgetSetting($key);
+        $usersetting->saveOrFail();
+
+        // set settings from settion
+        System::clearRequestSession("user_setting");
+
+        return $usersetting;
+    }
+
     protected function setBcryptPassword()
     {
         $password = $this->password;
-        $original = $this->getOriginal('password');
+        $original = $this->getRawOriginal('password');
 
         if (!isset($password)) {
             return;

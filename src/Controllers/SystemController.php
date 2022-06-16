@@ -10,6 +10,7 @@ use Exceedone\Exment\Enums\CustomValueAutoShare;
 use Exceedone\Exment\Enums\FilterSearchType;
 use Exceedone\Exment\Enums\JoinedOrgFilterType;
 use Exceedone\Exment\Enums\JoinedMultiUserFilterType;
+use Exceedone\Exment\Enums\ShowPositionType;
 use Exceedone\Exment\Enums\SystemTableName;
 use Exceedone\Exment\Enums\SystemVersion;
 use Exceedone\Exment\Enums\SystemColumn;
@@ -156,8 +157,13 @@ class SystemController extends AdminControllerBase
         $form->hidden('advanced')->default(1);
         $form->ignore('advanced');
 
+        $grid_per_pages = stringToArray(config('exment.grid_per_pages'));
+        if (empty($grid_per_pages)) {
+            $grid_per_pages = Define::PAGER_GRID_COUNTS;
+        }
+
         $form->select('grid_pager_count', exmtrans("system.grid_pager_count"))
-        ->options(getPagerOptions())
+        ->options(getPagerOptions(false, $grid_per_pages))
         ->disableClear()
         ->default(20)
         ->help(exmtrans("system.help.grid_pager_count"));
@@ -189,11 +195,30 @@ class SystemController extends AdminControllerBase
             })
             ->help(exmtrans("system.help.grid_filter_disable_flg"));
 
+        $form->select('system_values_pos', exmtrans("system.system_values_pos"))
+            ->default(ShowPositionType::TOP)
+            ->disableClear()
+            ->options(ShowPositionType::transKeyArrayFilter("system.system_values_pos_options", ShowPositionType::SYSTEM_SETTINGS()))
+            ->help(exmtrans("system.help.system_values_pos"));
+
         $form->select('data_submit_redirect', exmtrans("system.data_submit_redirect"))
             ->options(Enums\DataSubmitRedirect::transKeyArray("admin", false))
+            ->default(Enums\DataSubmitRedirect::LIST)
+            ->disableClear()
             ->help(exmtrans("system.help.data_submit_redirect"));
 
-  
+        $form->multipleSelect('header_user_info', exmtrans('system.header_user_info'))
+            ->help(exmtrans('system.help.header_user_info'))
+            ->config('maximumSelectionLength', 2)
+            ->options(function ($option) {
+                $options = CustomTable::getEloquent(SystemTableName::USER)->getColumnsSelectOptions([
+                    'include_system' => false,
+                    'ignore_attachment' => true
+                ]);
+                $options[SystemColumn::CREATED_AT] = exmtrans('common.created_at');
+                return $options;
+            });
+            
         $form->exmheader(exmtrans('system.publicform'))->hr();
         $form->switchbool('publicform_available', exmtrans("system.publicform_available"))
             ->default(0)

@@ -189,7 +189,7 @@ trait ExtendedBuilderTrait
      */
     public function whereNotInArrayString($column, $values)
     {
-        return $this->_whereInArrayString($column, $values, true, true);
+        return $this->_whereInArrayString($column, $values, false, true);
     }
     
     /**
@@ -203,7 +203,7 @@ trait ExtendedBuilderTrait
      */
     public function orWhereNotInArrayString($column, $values)
     {
-        return $this->_whereInArrayString($column, $values, true, false);
+        return $this->_whereInArrayString($column, $values, true, true);
     }
     
 
@@ -523,12 +523,14 @@ trait ExtendedBuilderTrait
             $value = Carbon::parse($value);
         }
 
+        $boolean = $isOr? 'or' : 'and';
+
         if ($isDatetime) {
             $date = (in_array($mark, ['<', '<=']) ? $value->copy()->addDay(1) : $value);
-            return $this->where($column, $mark, $date->format('Y-m-d'));
+            return $this->where($column, $mark, $date->format('Y-m-d'), $boolean);
         }
 
-        return $this->where($column, $mark, $value->format('Y-m-d'));
+        return $this->where($column, $mark, $value->format('Y-m-d'), $boolean);
     }
 
     /**
@@ -553,6 +555,12 @@ trait ExtendedBuilderTrait
             return $this->table;
         }
 
-        return $this->model->getTable();
+        if ($this instanceof \Illuminate\Database\Eloquent\Builder) {
+            return $this->model->getTable();
+        }
+
+        if ($this instanceof \Illuminate\Database\Query\Builder) {
+            return $this->from;
+        }
     }
 }

@@ -232,6 +232,20 @@
                     "options": {
                         "help": "メール送信元の表示名を入力してください。受信者に表示されます。変数を利用できます。"
                     }
+                },
+                {
+                    "column_name": "attachments",
+                    "column_view_name": "添付ファイル",
+                    "options": {
+                        "help": "メールに添付するファイルを選択してください。"
+                    }
+                },
+                {
+                    "column_name": "custom_attachments",
+                    "column_view_name": "カスタム添付ファイル",
+                    "options": {
+                        "help": "通知対象となったデータのカスタム列(ファイル、画像)や添付ファイルをメールに追加することができます。<br />例：カスタム列の場合: ${file:カスタム列名}、添付ファイルの場合: ${documents}"
+                    }
                 }
             ]
         },

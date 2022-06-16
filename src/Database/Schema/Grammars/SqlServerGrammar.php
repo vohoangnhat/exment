@@ -2,6 +2,8 @@
 
 namespace Exceedone\Exment\Database\Schema\Grammars;
 
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Fluent;
 use Exceedone\Exment\Model\CustomColumn;
 use Illuminate\Database\Schema\Grammars\SqlServerGrammar as BaseGrammar;
 
@@ -72,7 +74,7 @@ class SqlServerGrammar extends BaseGrammar implements GrammarInterface
     {
         return "if object_id('{$this->wrapTable($tableName)}') is null select * into {$this->wrapTable($tableName)} from custom_relation_values";
     }
-    
+
     public function compileAlterIndexColumn($db_table_name, $db_column_name, $index_name, $json_column_name, CustomColumn $custom_column)
     {
         // ALTER TABLE
@@ -88,11 +90,17 @@ class SqlServerGrammar extends BaseGrammar implements GrammarInterface
         ];
     }
     
+    public function compileAlterPrimaryKey($db_table_name, $db_column_name = 'id')
+    {
+        // ALTER TABLE
+        return "alter table {$db_table_name} add primary key ({$db_column_name})";
+    }
+    
     public function compileGetIndex($tableName)
     {
         return $this->_compileGetIndex($tableName, false);
     }
-    
+
     public function compileGetUnique($tableName)
     {
         return $this->_compileGetIndex($tableName, true);
@@ -119,13 +127,13 @@ class SqlServerGrammar extends BaseGrammar implements GrammarInterface
 
     public function compileGetConstraint($tableName)
     {
-        return "SELECT 
-            OBJECT_NAME([default_object_id]) AS name 
-        FROM 
-            SYS.COLUMNS 
-        WHERE 
-            [object_id] = OBJECT_ID('{$this->wrapTable($tableName)}') 
-        AND 
+        return "SELECT
+            OBJECT_NAME([default_object_id]) AS name
+        FROM
+            sys.columns
+        WHERE
+            [object_id] = OBJECT_ID('{$this->wrapTable($tableName)}')
+        AND
             [name] = :column_name";
     }
 
@@ -137,5 +145,59 @@ class SqlServerGrammar extends BaseGrammar implements GrammarInterface
     {
         $tableName = $this->wrapTable($tableName);
         return "ALTER TABLE $tableName DROP CONSTRAINT $contraintName";
+    }
+
+    /**
+     * Compile a drop default constraint command.
+     *
+     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
+     * @param  \Illuminate\Support\Fluent  $command
+     * @return string
+     */
+    public function compileDropDefaultConstraint(Blueprint $blueprint, Fluent $command)
+    {
+        $columns = "'".implode("','", $command->columns)."'";
+
+        $tableName = $this->getTablePrefix().$blueprint->getTable();
+
+        $sql = "DECLARE @sql NVARCHAR(MAX) = '';";
+        $sql .= "SELECT @sql += 'ALTER TABLE [dbo].[{$tableName}] DROP CONSTRAINT ' + OBJECT_NAME([default_object_id]) + ';' ";
+        $sql .= 'FROM sys.columns ';
+        $sql .= "WHERE [object_id] = OBJECT_ID('[dbo].[{$tableName}]') AND [name] in ({$columns}) AND [default_object_id] <> 0;";
+        $sql .= 'EXEC(@sql)';
+
+        return $sql;
+    }
+
+    // change correct name. sp_msforeachtable => sp_MSforeachtable
+
+    /**
+     * Compile the command to enable foreign key constraints.
+     *
+     * @return string
+     */
+    public function compileEnableForeignKeyConstraints()
+    {
+        return 'EXEC sp_MSforeachtable @command1="print \'?\'", @command2="ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all";';
+    }
+
+    /**
+     * Compile the command to disable foreign key constraints.
+     *
+     * @return string
+     */
+    public function compileDisableForeignKeyConstraints()
+    {
+        return 'EXEC sp_MSforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all";';
+    }
+
+    /**
+     * Compile the SQL needed to drop all tables.
+     *
+     * @return string
+     */
+    public function compileDropAllTables()
+    {
+        return "EXEC sp_MSforeachtable 'DROP TABLE ?'";
     }
 }

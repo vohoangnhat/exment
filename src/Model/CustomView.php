@@ -312,6 +312,7 @@ class CustomView extends ModelBase implements Interfaces\TemplateImporterInterfa
             'target_view' => $this,
             'query' => null,
             'grid' => null,
+            'isApi' => false,
         ], $options);
 
         if ($this->view_kind_type == ViewKindType::AGGREGATE) {
@@ -984,6 +985,30 @@ class CustomView extends ModelBase implements Interfaces\TemplateImporterInterfa
         $this->setOption('view_infobox', $val);
 
         return $this;
+    }
+
+    public function getHeaderAlignAttribute()
+    {
+        return $this->getOption('header_align');
+    }
+
+    public function setHeaderAlignAttribute($val)
+    {
+        $this->setOption('header_align', $val);
+
+        return $this;
+    }
+
+    public function getHeaderOptions()
+    {
+        $attributes = [];
+        switch ($this->header_align) {
+            case 'center':
+            case 'right':
+                $attributes['class'] = 'header-' . $this->header_align;
+                break;
+        }
+        return $attributes;
     }
 
     /**

@@ -18,6 +18,7 @@ use Exceedone\Exment\Enums\FilterType;
 use Exceedone\Exment\Enums\SystemColumn;
 use Exceedone\Exment\Enums\SystemTableName;
 use Exceedone\Exment\Enums\DatabaseDataType;
+use Exceedone\Exment\Enums\TextAlignExType;
 use Exceedone\Exment\ColumnItems\CustomColumns\AutoNumber;
 use Exceedone\Exment\Validator;
 
@@ -135,10 +136,32 @@ abstract class CustomItem implements ItemInterface
      */
     public function gridStyle()
     {
-        return $this->getStyleString([
+        $array = [
             'min-width' => $this->custom_column->getOption('min_width', config('exment.grid_min_width', 100)) . 'px',
             'max-width' => $this->custom_column->getOption('max_width', config('exment.grid_max_width', 300)) . 'px',
-        ]);
+        ];
+        $text_align = $this->custom_column->getOption('text_align');
+        if (isset($text_align)) {
+            $array['text-align'] = $text_align;
+        }
+        return $this->getStyleString($array);
+    }
+
+    /**
+     * get grid header style
+     */
+    public function gridHeaderStyle()
+    {
+        $array = [];
+
+        $header_align = array_get($this->options, 'header_align')?? TextAlignExType::LEFT;
+        if ($header_align == TextAlignExType::INHERIT) {
+            $text_align = $this->custom_column->getOption('text_align');
+            if (isset($text_align)) {
+                $array['text-align'] = $text_align;
+            }
+        }
+        return $array;
     }
 
     /**
@@ -287,8 +310,10 @@ abstract class CustomItem implements ItemInterface
     {
         $default_type = array_get($this->form_column_options, 'default_type');
         $default = array_get($this->form_column_options, 'default');
-        $default_type = is_nullorempty($default_type)? array_get($this->custom_column->options, 'default_type'):$default_type;
-        $default = is_nullorempty($default)? array_get($this->custom_column->options, 'default'):$default;
+        if (is_nullorempty($default_type) && is_nullorempty($default)) {
+            $default_type = array_get($this->custom_column->options, 'default_type');
+            $default = array_get($this->custom_column->options, 'default');
+        }
 
         return [$default_type, $default];
     }
@@ -390,8 +415,8 @@ abstract class CustomItem implements ItemInterface
 
     public function getAdminField($form_column = null, $column_name_prefix = null)
     {
-        $form_column_options = $form_column->options ?? null;
-        $this->form_column_options = $form_column_options;
+        $form_column_options = $form_column->options ?? [];
+        $this->form_column_options = array_merge($this->form_column_options, $form_column_options);
 
         // if hidden setting, add hidden field
         if ($this->hidden()) {

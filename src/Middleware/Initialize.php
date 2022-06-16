@@ -147,12 +147,23 @@ class Initialize
 
 
         ///// File info
+        $permissions = [
+            'file' => [
+                'public' => 0764,
+                'private' => 0700,
+            ],
+            'dir' => [
+                'public' => 0775,
+                'private' => 0700,
+            ]
+        ];
         /// maybe update setting by user
         if (!Config::has('filesystems.disks.exment')) {
             Config::set('filesystems.disks.exment', [
                 'driver' => 'local',
                 'root' => storage_path('app/admin'),
                 'url' => admin_url(),
+                'permissions' => $permissions,
             ]);
         }
         
@@ -160,6 +171,7 @@ class Initialize
             Config::set('filesystems.disks.backup', [
                 'driver' => 'local',
                 'root' => storage_path('app/backup'),
+                'permissions' => $permissions,
             ]);
         }
 
@@ -167,6 +179,7 @@ class Initialize
             Config::set('filesystems.disks.plugin', [
                 'driver' => 'local',
                 'root' => storage_path('app/plugins'),
+                'permissions' => $permissions,
             ]);
         }
         
@@ -174,6 +187,7 @@ class Initialize
             Config::set('filesystems.disks.template', [
                 'driver' => 'local',
                 'root' => storage_path('app/templates'),
+                'permissions' => $permissions,
             ]);
         }
 
@@ -181,6 +195,7 @@ class Initialize
             Config::set('filesystems.disks.public_form_tmp', [
                 'driver' => 'local',
                 'root' => storage_path('app/public_form_tmp'),
+                'permissions' => $permissions,
             ]);
         }
 
@@ -189,44 +204,52 @@ class Initialize
         Config::set('filesystems.disks.admin_tmp', [
             'driver' => 'local',
             'root' => storage_path('app/admin_tmp'),
+            'permissions' => $permissions,
         ]);
 
         Config::set('filesystems.disks.tmpupload', [
             'driver' => 'local',
             'root' => storage_path('app/tmpupload'),
+            'permissions' => $permissions,
         ]);
 
         Config::set('filesystems.disks.admin', [
             'driver' => 'exment-driver-exment',
             'mergeFrom' => 'exment',
+            'permissions' => $permissions,
         ]);
         
         Config::set('filesystems.disks.plugin_sync', [
             'driver' => 'exment-driver-plugin',
             'mergeFrom' => 'plugin',
             'root' => storage_path('app/plugins'),
+            'permissions' => $permissions,
         ]);
 
         Config::set('filesystems.disks.backup_sync', [
             'driver' => 'exment-driver-backup',
             'mergeFrom' => 'backup',
             'root' => storage_path('app/backup'),
+            'permissions' => $permissions,
         ]);
         
         Config::set('filesystems.disks.template_sync', [
             'driver' => 'exment-driver-template',
             'mergeFrom' => 'template',
             'root' => storage_path('app/templates'),
+            'permissions' => $permissions,
         ]);
 
 
         Config::set('filesystems.disks.plugin_local', [
             'driver' => 'local',
             'root' => storage_path('app/plugins'),
+            'permissions' => $permissions,
         ]);
         Config::set('filesystems.disks.plugin_test', [
             'driver' => 'local',
             'root' => exment_package_path('tests/tmpfile/plugins'),
+            'permissions' => $permissions,
         ]);
 
         // mysql setting
@@ -363,15 +386,30 @@ class Initialize
 
             // mail setting
             if (!boolval(config('exment.mail_setting_env_force', false))) {
-                $keys = [
-                    'system_mail_host' => 'host',
-                    'system_mail_port' => 'port',
-                    'system_mail_username' => 'username',
-                    'system_mail_password' => 'password',
-                    'system_mail_encryption' => 'encryption',
-                    'system_mail_from' => ['from.address', 'from.name'],
-                    'system_mail_from_view_name' => 'from.name', // If system_mail_from_view_name is not set, from.name set as system_mail_from
-                ];
+                // Here we will check if the "driver" key exists and if it does we will use
+                // the entire mail configuration file as the "driver" config in order to
+                // provide "BC" for any Laravel <= 6.x style mail configuration files.
+                if (!is_nullorempty(Config::get('mail.driver'))) {
+                    $keys = [
+                        'system_mail_host' => 'host',
+                        'system_mail_port' => 'port',
+                        'system_mail_username' => 'username',
+                        'system_mail_password' => 'password',
+                        'system_mail_encryption' => 'encryption',
+                        'system_mail_from' => ['from.address', 'from.name'],
+                        'system_mail_from_view_name' => 'from.name', // If system_mail_from_view_name is not set, from.name set as system_mail_from
+                    ];
+                } else {
+                    $keys = [
+                        'system_mail_host' => 'mailers.smtp.host',
+                        'system_mail_port' => 'mailers.smtp.port',
+                        'system_mail_username' => 'mailers.smtp.username',
+                        'system_mail_password' => 'mailers.smtp.password',
+                        'system_mail_encryption' => 'mailers.smtp.encryption',
+                        'system_mail_from' => ['from.address', 'from.name'],
+                        'system_mail_from_view_name' => 'from.name', // If system_mail_from_view_name is not set, from.name set as system_mail_from
+                    ];
+                }
 
                 foreach ($keys as $keyname => $configname) {
                     if (is_nullorempty($val = System::{$keyname}())) {
@@ -417,8 +455,10 @@ class Initialize
         Grid::init(function (Grid $grid) {
             $grid->disableColumnSelector();
 
-            if (!is_null($value = System::grid_pager_count())) {
-                $grid->paginate($value);
+            if ($grid->model() && ($grid->model()->eloquent() instanceof Model\CustomValue)) {
+                if (!is_null($value = System::grid_pager_count())) {
+                    $grid->paginate($value);
+                }
             }
         });
 
@@ -469,6 +509,7 @@ class Initialize
             'tinymce'        => Field\Tinymce::class,
             'codeEditor'          => Field\CodeEditor::class,
             'image'        => Field\Image::class,
+            'favicon'        => Field\Favicon::class,
             'link'           => Field\Link::class,
             'exmheader'           => Field\Header::class,
             'radio'           => Field\RadioButton::class,

@@ -189,7 +189,7 @@ class ApiDataController extends AdminControllerTableBase
 
         $paramInfos = [];
         foreach ($params as $param) {
-            $values = preg_split("/\s+/", trim($param));
+            $values = preg_split("/\s+/", trim($param), 3);
             $column_name = $values[0];
 
             if (count($values) < 3 || !preg_match('/^eq|ne|gt|gte|lt|lte|like$/i', $values[1])) {
@@ -353,6 +353,7 @@ class ApiDataController extends AdminControllerTableBase
         $paginator = $custom_view->getDataPaginate([
             'maxCount' => $count,
             'executeSearch' => false,
+            'isApi' => true,
         ]);
         $paginator = $this->modifyAfterGetValue($request, $paginator, [
             'appends' => [
@@ -901,8 +902,9 @@ class ApiDataController extends AdminControllerTableBase
         // get target ids
         $ids = \DB::query()->fromSub($query, 'sub')->pluck('id');
 
+        $result = clone $model;
         // return as eloquent
-        return $model->whereIn("$db_table_name.id", $ids);
+        return $result->whereIn("$db_table_name.id", $ids);
     }
 
     /**

@@ -97,6 +97,8 @@ class DefaultGrid extends GridBase
     public function setGrid($grid)
     {
         $custom_table = $this->custom_table;
+        // set table header attributes
+        $grid->setHeaderAttributes($this->custom_view->getHeaderOptions());
         // get view columns
         $custom_view_columns = $this->custom_view->custom_view_columns_cache;
         foreach ($custom_view_columns as $custom_view_column) {
@@ -110,6 +112,7 @@ class DefaultGrid extends GridBase
                     'grid_column' => true,
                     'view_pivot_column' => $custom_view_column->view_pivot_column_id ?? null,
                     'view_pivot_table' => $custom_view_column->view_pivot_table_id ?? null,
+                    'header_align' => $this->custom_view->header_align ?? null,
                 ]);
             //$name = $item->indexEnabled() ? $item->index() : $item->uniqueName();
             $className = 'column-' . $item->name();
@@ -122,6 +125,7 @@ class DefaultGrid extends GridBase
                 })
                 ->style($item->gridStyle())
                 ->setClasses($className)
+                ->setHeaderStyle($item->gridHeaderStyle())
                 ->display(function ($v) use ($item) {
                     if (is_null($this)) {
                         return '';
@@ -136,6 +140,12 @@ class DefaultGrid extends GridBase
             $grid->paginate(intval($pager_count));
         }
 
+        $grid_per_pages = stringToArray(config('exment.grid_per_pages'));
+        if (empty($grid_per_pages)) {
+            $grid_per_pages = Define::PAGER_GRID_COUNTS;
+        }
+        $grid->perPages($grid_per_pages);
+        
         // set with
         $custom_table->setQueryWith($grid->model(), $this->custom_view);
     }
@@ -453,7 +463,8 @@ class DefaultGrid extends GridBase
                     } else {
                         foreach ($this->custom_table->custom_operations as $custom_operation) {
                             if ($custom_operation->matchOperationType(Enums\CustomOperationType::BULK_UPDATE)) {
-                                $batch->add($custom_operation->operation_name, new GridTools\BatchUpdate($custom_operation));
+                                $title = $custom_operation->getOption('button_label') ?? $custom_operation->operation_name;
+                                $batch->add($title, new GridTools\BatchUpdate($custom_operation));
                             }
                         }
                     }
@@ -692,11 +703,20 @@ class DefaultGrid extends GridBase
     public static function setViewForm($view_kind_type, $form, $custom_table, array $options = [])
     {
         if (in_array($view_kind_type, [Enums\ViewKindType::DEFAULT, Enums\ViewKindType::ALLDATA])) {
+            $grid_per_pages = stringToArray(config('exment.grid_per_pages'));
+            if (empty($grid_per_pages)) {
+                $grid_per_pages = Define::PAGER_GRID_COUNTS;
+            }
+
             $form->select('pager_count', exmtrans("common.pager_count"))
                 ->required()
-                ->options(getPagerOptions(true))
-                ->config('allowClear', false)
+                ->options(getPagerOptions(true, $grid_per_pages))
+                ->disableClear()
                 ->default(0);
+
+            $form->select('header_align', exmtrans("custom_view.header_align"))
+                ->options(Enums\TextAlignExType::transArray('custom_view.align_type_options'))
+            ;
         }
 
         // column setting

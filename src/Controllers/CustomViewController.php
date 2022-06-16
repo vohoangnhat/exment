@@ -259,7 +259,7 @@ class CustomViewController extends AdminControllerTableBase
             if ($this->custom_table->hasSystemViewPermission() && (is_null($view_type) || $view_type == Enums\ViewType::USER)) {
                 $form->select('view_type', exmtrans('custom_view.view_type'))
                     ->default(Enums\ViewType::SYSTEM)
-                    ->config('allowClear', false)
+                    ->disableClear()
                     ->help(exmtrans('custom_view.help.custom_view_type'))
                     ->options(Enums\ViewType::transKeyArray('custom_view.custom_view_type_options'));
             } else {
@@ -282,7 +282,7 @@ class CustomViewController extends AdminControllerTableBase
 
         // append model for getting from options
         $form->editing(function ($form) {
-            $form->model()->append(['use_view_infobox', 'view_infobox_title', 'view_infobox', 'pager_count', 'condition_join']);
+            $form->model()->append(['use_view_infobox', 'view_infobox_title', 'view_infobox', 'pager_count', 'condition_join', 'header_align']);
         });
 
         // check filters and sorts count before save

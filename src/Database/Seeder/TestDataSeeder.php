@@ -36,6 +36,7 @@ use Exceedone\Exment\Model\NotifyNavbar;
 use Exceedone\Exment\Model\RoleGroupPermission;
 use Exceedone\Exment\Model\RoleGroupUserOrganization;
 use Exceedone\Exment\Model\System;
+use Exceedone\Exment\Model\File as ExmentFile;
 use Exceedone\Exment\Tests\TestDefine;
 use Exceedone\Exment\Services\Plugin\PluginInstaller;
 use Exceedone\Exment\Storage\Disk\TestPluginDiskService;
@@ -72,6 +73,8 @@ class TestDataSeeder extends Seeder
 
         $this->createAllColumnsTableForTest($menu, $users);
 
+        $this->createUnicodeDataTable($menu, $users);
+
         $this->createApiSetting();
 
         $this->createMailTemplate();
@@ -95,6 +98,17 @@ class TestDataSeeder extends Seeder
 
     protected function createUserOrg()
     {
+        // First, create "boss" column.
+        CustomColumn::create([
+            'custom_table_id' => CustomTable::getEloquent(SystemTableName::USER)->id,
+            'column_name' => 'boss',
+            'column_view_name' => 'Boss',
+            'column_type' => ColumnType::USER,
+            'options' => [
+                'index_enabled' => 1,
+            ],
+        ]);
+
         \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
             'user' => ltrim(getModelName('user', true), "\\"),
             'organization' => ltrim(getModelName('organization', true), "\\"),
@@ -131,10 +145,18 @@ class TestDataSeeder extends Seeder
 
                 $model->save();
 
+                $avatar = null;
+                if (array_has($user, 'avatar')) {
+                    $file_data = base64_decode(array_get($user, 'avatar'));
+                    $file = ExmentFile::storeAs(FileType::AVATAR, $file_data, 'avatar', 'avatar.png');
+                    $avatar = $file->path;
+                }
+
                 if (array_has($user, 'password')) {
                     $loginUser = new LoginUser;
                     $loginUser->base_user_id = $model->id;
                     $loginUser->password = $user['password'];
+                    $loginUser->avatar = $avatar;
                     $loginUser->save();
                 }
 
@@ -480,7 +502,7 @@ class TestDataSeeder extends Seeder
     {
         $custom_table_view_all = CustomTable::getEloquent('custom_value_view_all');
         $custom_table_edit = CustomTable::getEloquent('custom_value_edit');
-        // cerate table
+        // create table
         $custom_table = $this->createTable(TestDefine::TESTDATA_TABLE_NAME_ALL_COLUMNS_FORTEST, [
                 'menuParentId' => $menu->id,
                 'count' => 0,
@@ -580,6 +602,80 @@ class TestDataSeeder extends Seeder
                 }
             ]);
         $this->createPermission([Permission::CUSTOM_VALUE_EDIT => $custom_table]);
+    }
+    
+    protected function createUnicodeDataTable($menu, $users)
+    {
+        $select_array = ['日本', 'アメリカ', '中国', 'イタリア', 'カナダ'];
+        $select_valtext_array = ['い' => '北海道', 'ろ' => '東北', 'は' => '関東', 'に' => '甲信越', 'ほ' => '中部', 'へ' => '近畿', 'と' => '中国', 'ち' => '四国', 'り' => '九州'];
+        $select_array_2 = ['コメダ珈琲', 'ドトール', 'スターバックス', '珈琲館', '上島珈琲店'];
+        // create table
+        $custom_table = $this->createTable(TestDefine::TESTDATA_TABLE_NAME_UNICODE_DATA, [
+            'menuParentId' => $menu->id,
+            'count' => 0,
+            'createCustomView' => false,
+            'createColumnCallback' => function ($custom_table, &$custom_columns) use ($select_array, $select_array_2, $select_valtext_array) {
+                $select_valtext_array = collect($select_valtext_array)->map(function ($item, $key) {
+                    return "$key,$item";
+                });
+                // creating relation column
+                $columns = [
+                    ['column_name' => 'select', 'column_type' => ColumnType::SELECT, 'options' => ['index_enabled' => '1', 'select_item' => $select_array_2]],
+                    ['column_name' => 'select_multiple', 'column_type' => ColumnType::SELECT, 'options' => ['index_enabled' => '1', 'select_item' => $select_array,'multiple_enabled' => '1']],
+                    ['column_name' => 'select_valtext_multiple', 'column_type' => ColumnType::SELECT_VALTEXT, 'options' => ['index_enabled' => '1', 'select_item_valtext' => $select_valtext_array,'multiple_enabled' => '1']],
+                ];
+
+                foreach ($columns as $column) {
+                    $custom_column = CustomColumn::create([
+                        'custom_table_id' => $custom_table->id,
+                        'column_name' => $column['column_name'] ?? $column['column_type'],
+                        'column_view_name' => $column['column_name'] ?? $column['column_type'],
+                        'column_type' => $column['column_type'],
+                        'options' => $column['options'],
+                    ]);
+                    $custom_columns[] = $custom_column;
+                }
+            },
+            'createValueCallback' => function ($custom_table, $options) use ($users, $select_array, $select_array_2, $select_valtext_array) {
+                $custom_values = [];
+                System::custom_value_save_autoshare(CustomValueAutoShare::USER_ORGANIZATION);
+                $index = 0;
+                foreach ($users as $key => $user) {
+                    \Auth::guard('admin')->attempt([
+                        'username' => $key,
+                        'password' => array_get($user, 'password')
+                    ]);
+        
+                    $user_id = array_get($user, 'id');
+        
+                    for ($i = 1; $i <= 10; $i++) {
+                        $index++;
+                        $new_id = ($custom_table->getValueModel()->orderBy('id', 'desc')->max('id') ?? 0) + 1;
+
+                        $custom_value = $custom_table->getValueModel();
+                        // only use rand
+                        if ($i == 9) {
+                            $custom_value->setValue("select_multiple", ['日本']);
+                            $custom_value->setValue("select_valtext_multiple", ['い', 'ほ']);
+                        } elseif ($i == 10) {
+                            $custom_value->setValue("select_multiple", ['カナダ', '日本']);
+                            $custom_value->setValue("select_valtext_multiple", ['ろ', 'ち']);
+                        } else {
+                            $custom_value->setValue("select_multiple", $this->getMultipleSelectValue($select_array, 5));
+                            $custom_value->setValue("select_valtext_multiple", $this->getMultipleSelectValue(array_keys($select_valtext_array), 8));
+                        }
+                        $custom_value->setValue("select", $select_array_2[($i-1) % 5]);
+                        $custom_value->created_user_id = $user_id;
+                        $custom_value->updated_user_id = $user_id;
+                        $custom_value->save();
+        
+                        $custom_values[] = $custom_value;
+                    }
+                }
+        
+                return $custom_values;
+            }
+        ]);
     }
 
     /**
@@ -754,6 +850,7 @@ class TestDataSeeder extends Seeder
             'createColumnCallback' => null, // if not null, callback as creating columns instead of default
             'createColumnFirstCallback' => null, // if not null, callback as creating columns. After this callback, call default columns.
             'createRelationCallback' => null, // if not null, callback as creating relations
+            'createCustomView' => true, // if false, not creating view except alldata view
             'createValue' => true, // if false, not creating default values
             'createValueCallback' => null, // if not null, callback as creting value
         ], $options);
@@ -767,6 +864,7 @@ class TestDataSeeder extends Seeder
         $createRelationCallback = $options['createRelationCallback'];
         $createValue = $options['createValue'];
         $createValueCallback = $options['createValueCallback'];
+        $createCustomView = $options['createCustomView'];
         
         $customTableOptions = array_merge([
             'search_enabled' => 1,
@@ -837,7 +935,7 @@ class TestDataSeeder extends Seeder
 
         $this->createForm($custom_table);
 
-        $this->createView($custom_table, $custom_columns);
+        $this->createView($custom_table, $custom_columns, $createCustomView);
 
         $notify_id = $this->createNotify($custom_table);
         $options['notify_id'] = $notify_id;
@@ -906,7 +1004,7 @@ class TestDataSeeder extends Seeder
                 $custom_value = $custom_table->getValueModel();
                 $custom_value->setValue("text", 'test_'.$user_id);
                 $custom_value->setValue("user", $user_id);
-                $custom_value->setValue("index_text", 'index_'.$user_id.'_'.$i);
+                $custom_value->setValue("index_text", 'index_'.sprintf('%03d', $user_id).'_'.sprintf('%03d', $i));
                 $custom_value->setValue("odd_even", (($i == 1 || rand(0, 1) == 0) ? 'even' : 'odd'));
                 $custom_value->setValue("multiples_of_3", (($i == 1 || $count % 3 == 0) ? 1 : 0));
                 $custom_value->setValue("date", \Carbon\Carbon::now()->addDays($count % 3));
@@ -1218,7 +1316,7 @@ class TestDataSeeder extends Seeder
      *
      * @return void
      */
-    protected function createView($custom_table, $custom_columns)
+    protected function createView($custom_table, $custom_columns, $createCustomView)
     {
         ///// create AllData view
         $custom_view = $this->createCustomView($custom_table, ViewType::SYSTEM, ViewKindType::ALLDATA, $custom_table->table_name . '-view-all', []);
@@ -1230,6 +1328,10 @@ class TestDataSeeder extends Seeder
             $this->createViewColumn($custom_view->id, $custom_table->id, $custom_column->id, $order++);
         }
     
+        if (!$createCustomView) {
+            return;
+        }
+
         // create andor
         foreach (['and', 'or'] as $join_type) {
             // create view

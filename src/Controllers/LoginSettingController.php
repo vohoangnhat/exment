@@ -111,9 +111,9 @@ class LoginSettingController extends AdminControllerBase
 
         if (!isset($id)) {
             $form->radio('login_type', exmtrans('login.login_type'))->options(LoginType::transArrayFilter('login.login_type_options', LoginType::SETTING()))
-            ->required()
-            ->attribute(['data-filtertrigger' =>true])
-            ->help(exmtrans('common.help.init_flg'));
+                ->required()
+                ->attribute(['data-filtertrigger' =>true])
+                ->help(exmtrans('common.help.init_flg'));
         } else {
             $form->display('login_type_text', exmtrans('login.login_type'));
             $form->hidden('login_type');
@@ -164,7 +164,7 @@ class LoginSettingController extends AdminControllerBase
             // showing "user"'s Custom column and unique
             $form->select('mapping_user_column', exmtrans("login.mapping_user_column"))
             ->required()
-            ->config('allowClear', false)
+            ->disableClear()
             ->help(exmtrans('login.help.mapping_user_column'))
             ->options(function ($column) use ($user_custom_columns) {
                 return $user_custom_columns->filter(function ($custom_column) {
@@ -216,6 +216,26 @@ class LoginSettingController extends AdminControllerBase
             $form->color('login_button_font_color_hover', exmtrans('login.login_button_font_color_hover'))
             ->default(null)
             ->help(exmtrans('login.help.login_button_font_color_hover'));
+
+            // setting for each settings of login oauth. --------------------------------------------------
+            // Form options area -- start
+            $form->html('<div class="form_dynamic_options">')->plain();
+
+            // get provider_name
+            $request = request();
+            $provider_name = null;
+            if (isset($login_setting) && $login_setting->login_type == LoginType::OAUTH) {
+                $provider_name = $login_setting->provider_name;
+            } elseif ($request->get('login_type') == LoginType::OAUTH) {
+                $provider_name = array_get($request->all(), 'options.oauth_provider_type') == 'other' ? array_get($request->all(), 'options.oauth_provider_name') : array_get($request->all(), 'options.oauth_provider_type');
+            } elseif ($request->old('login_type') == LoginType::OAUTH) {
+                $provider_name = array_get($request->old(), 'options.oauth_provider_type') == 'other' ? array_get($request->old(), 'options.oauth_provider_name') : array_get($request->old(), 'options.oauth_provider_type');
+            }
+            if (!is_nullorempty($provider_name)) {
+                LoginServiceBase\OAuth\OAuthService::setLoginSettingForm($provider_name, $form);
+            }
+            // Form options area -- End
+            $form->html('</div>')->plain();
         })->disableHeader();
 
         $form->disableReset();
@@ -352,7 +372,7 @@ class LoginSettingController extends AdminControllerBase
             
         $form->select('login_page_image_type', exmtrans("system.login_page_image_type"))
             ->help(exmtrans("system.help.login_page_image_type"))
-            ->config('allowClear', false)
+            ->disableClear()
             ->options(Enums\LoginBgImageType::transArray('system.login_page_image_type_options'))
         ;
 
@@ -578,7 +598,7 @@ class LoginSettingController extends AdminControllerBase
 
         $form->select('login_2factor_provider', exmtrans("2factor.login_2factor_provider"))
             ->options(Login2FactorProviderType::transKeyArray('2factor.2factor_provider_options'))
-            ->config('allowClear', false)
+            ->disableClear()
             ->default(Login2FactorProviderType::EMAIL)
             ->help(exmtrans("2factor.help.login_2factor_provider"))
             ->attribute(['data-filter' => json_encode(['key' => 'login_use_2factor', 'value' => '1'])]);
@@ -700,5 +720,35 @@ class LoginSettingController extends AdminControllerBase
             'toastr' => exmtrans('common.message.sendmail_succeeded'),
             'reload' => false,
         ]);
+    }
+
+    
+    /**
+     * Get login option form
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function loginOptionHtml(Request $request)
+    {
+        $val = $request->get('val');
+        $form_type = $request->get('form_type');
+        $form_uniqueName = $request->get('form_uniqueName');
+        $id = $request->route('id');
+
+        $form = new Form(new LoginSetting);
+        $form->setUniqueName($form_uniqueName)->embeds('options', exmtrans("login.options"), function ($form) use ($val) {
+            // Form options area -- start
+            $form->html('<div class="form_dynamic_options_response">')->plain();
+            LoginServiceBase\OAuth\OAuthService::setLoginSettingForm($val, $form);
+            $form->html('</div>')->plain();
+        });
+
+        $body = $form->render();
+        $script = \Admin::purescript()->render();
+        return [
+            'body'  => $body,
+            'script' => $script,
+        ];
     }
 }

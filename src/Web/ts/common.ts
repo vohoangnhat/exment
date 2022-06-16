@@ -2,7 +2,8 @@ declare var toastr: any;
 declare var math: any;
 declare var LA: any;
 declare var BigNumber: any;
-declare function swal(...x:any): any;
+declare var swal: any;
+declare var tinyMCE: any; 
 
 namespace Exment {
     export class CommonEvent {
@@ -157,6 +158,21 @@ namespace Exment {
 
                 if(!hasValue(res.keepModal) || !res.keepModal){
                     $('.modal').modal('hide');
+                }
+
+                // response as file
+                if(hasValue(res.fileBase64)){
+                    const blob = b64toBlob(res.fileBase64, res.fileContentType);
+                    const blobUrl = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    document.body.appendChild(a);
+                    a.download = res.fileName;
+                    a.href = blobUrl;
+                    a.click();
+                    a.remove();
+                    setTimeout(() => {
+                        URL.revokeObjectURL(blobUrl);
+                    }, 1E4);
                 }
 
                 if(hasValue(resolve) && !hasValue(res.swal)){
@@ -375,9 +391,9 @@ namespace Exment {
          * if click grid row, move page
          */
         public static tableHoverLink() {
-            $('table').find('[data-id]').closest('tr').not('.tableHoverLinkEvent').on('click', function (ev: JQueryEventObject) {
+            $('table').find('[data-id],.rowclick').closest('tr').not('.tableHoverLinkEvent').on('click', function (ev: JQueryEventObject) {
                 // if e.target closest"a" is length > 0, return
-                if ($(ev.target).closest('a').length > 0) {
+                if ($(ev.target).closest('a,.rowclick').length > 0) {
                     return;
                 }
                 if ($(ev.target).closest('.popover').length > 0) {
@@ -409,7 +425,7 @@ namespace Exment {
                 if (!hasValue(linkElem)) {
                     return;
                 }
-                linkElem.closest('a').click();
+                linkElem.closest('a,.rowclick').trigger('click');
             }).addClass('tableHoverLinkEvent');
         }
 
@@ -1150,4 +1166,43 @@ const getUuid = function() : string{
       var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
     });
+}
+
+const getFormData = function (form) {
+    var formData = new FormData(form);
+    if (tinyMCE.activeEditor) {
+        tinyMCE.activeEditor.save();
+    }
+    $('textarea[data-column_type="editor"]').each(function (index, elem) {
+        let $elem = $(elem);
+        formData.append($elem.attr('name'), $elem.val() as string);
+    });
+    return formData;
+}
+
+/**
+ * Convert base64 to blob
+ * @param b64Data base64 string
+ * @param contentType download content type
+ * @param sliceSize 
+ * @returns blob data
+ */
+const b64toBlob = (b64Data, contentType='', sliceSize=512) => {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+  
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+  
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+  
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+  
+    const blob = new Blob(byteArrays, {type: contentType});
+    return blob;
 }

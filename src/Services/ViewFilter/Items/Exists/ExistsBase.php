@@ -14,8 +14,13 @@ abstract class ExistsBase extends ViewFilterBase
 
     protected function _setFilter($query, $method_name, $query_column, $query_value)
     {
-        $query_value = jsonToArray($query_value);
         $isMultiple = $this->column_item->isMultipleEnabled();
+        $query_value = jsonToArray($query_value);
+
+        $isUseUnicode = \ExmentDB::isUseUnicodeMultipleColumn();
+        $query_value = collect($query_value)->map(function ($val) use ($isMultiple, $isUseUnicode) {
+            return $isMultiple && $isUseUnicode? unicode_encode($val): $val;
+        })->toArray();
         if ($isMultiple) {
             $method_name_suffix = $this->isExists() ? 'InArrayString' : 'NotInArrayString';
             $query->{$method_name.$method_name_suffix}($query_column, $query_value);

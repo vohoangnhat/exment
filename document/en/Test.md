@@ -7,9 +7,9 @@ How to test.
 - Please execute this command.
 
 ```
-composer require symfony/css-selector=~4.2
-composer require laravel/browser-kit-testing=~5.2
-composer require dms/phpunit-arraysubset-asserts=~0.1
+composer require symfony/css-selector=~5.0
+composer require laravel/browser-kit-testing=~6.3
+composer require dms/phpunit-arraysubset-asserts=~0.3
 ```
 
 ### Change PHPUnit version (Only first)
@@ -55,7 +55,7 @@ Execute Lint (PHPStan / Laratisan) and perform syntax check etc.
 
 ```
 # for lint
-composer require --dev nunomaduro/larastan=^0.5
+composer require --dev nunomaduro/larastan=~1.0
 
 # for Exment related libraries
 composer require pragmarx/google2fa
@@ -65,6 +65,7 @@ composer require aacotroneo/laravel-saml2
 composer require league/flysystem-sftp=~1.0
 composer require league/flysystem-aws-s3-v3=~1.0
 composer require league/flysystem-azure-blob-storage=~0.1.6
+composer require spatie/flysystem-dropbox=^1.2.0
 ```
 
 - Copy setting file.
@@ -81,6 +82,13 @@ vendor/exceedone/exment/phpstan.neon.dist
 ./vendor/bin/phpstan analyse
 ```
 
+## Language file creation omission check
+Execute the following command and check that there are no omissions in the translation file settings of the language file.
+*If nothing is displayed as a result of execution, the process ends normally. If there is a translation omission, the translation target will be listed.
+
+```
+php artisan exment: checklang
+```
 
 ## About Testdata
 
@@ -92,7 +100,7 @@ vendor/exceedone/exment/phpstan.neon.dist
 | 3 | user2 | user2user2 |
 | 4 | user3 | user3user3 |
 | 5 | company1-userA | company1-userA |
-| 6 | dev-userB | dev-userB |
+| 6 | dev0-userB | dev0-userB |
 | 7 | dev1-userC | dev1-userC |
 | 8 | dev1-userD | dev1-userD |
 | 9 | dev2-userE | dev2-userE |
@@ -102,7 +110,7 @@ vendor/exceedone/exment/phpstan.neon.dist
 | id | organization_code | parent_organization_code | users |
 | ---- | ---- | ---- | ---- |
 | 1 | company1 | - | company1-userA |
-| 2 | dev | company1 | dev-userB |
+| 2 | dev | company1 | dev0-userB |
 | 3 | manage | company1 | - |
 | 4 | dev1 | dev | dev1-userC,dev1-userD |
 | 5 | dev2 | dev | dev2-userE |

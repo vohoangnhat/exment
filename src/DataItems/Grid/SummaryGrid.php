@@ -5,6 +5,7 @@ namespace Exceedone\Exment\DataItems\Grid;
 use Encore\Admin\Grid;
 use Encore\Admin\Form;
 use Exceedone\Exment\Form\Tools;
+use Exceedone\Exment\Model\Define;
 use Exceedone\Exment\Model\CustomTable;
 use Exceedone\Exment\Model\CustomViewColumn;
 use Exceedone\Exment\Model\CustomViewSummary;
@@ -31,6 +32,12 @@ class SummaryGrid extends GridBase
 
         $this->setGrid($grid);
 
+        $grid_per_pages = stringToArray(config('exment.grid_per_pages'));
+        if (empty($grid_per_pages)) {
+            $grid_per_pages = Define::PAGER_GRID_COUNTS;
+        }
+        $grid->perPages($grid_per_pages);
+
         $grid->disableCreateButton();
         $grid->disableFilter();
         //$grid->disableActions();
@@ -43,7 +50,7 @@ class SummaryGrid extends GridBase
         if (!$isShowViewSummaryDetail) {
             $grid->disableActions();
         }
-
+        
         $_this = $this;
         $grid->actions(function (Grid\Displayers\Actions $actions) use ($_this, $isShowViewSummaryDetail, $custom_view, $table_name) {
             $actions->disableDelete();
@@ -299,7 +306,7 @@ class SummaryGrid extends GridBase
             $form->select('sort_type', exmtrans("custom_view.sort"))
             ->help(exmtrans('custom_view.help.sort_type'))
                 ->options(Enums\ViewColumnSort::transKeyArray('custom_view.column_sort_options'))
-                ->config('allowClear', false)->default(Enums\ViewColumnSort::ASC);
+                ->disableClear()->default(Enums\ViewColumnSort::ASC);
                 
             $form->hidden('order')->default(0);
         })->required()->rowUpDown('order')->setTableColumnWidth(4, 2, 2, 1, 2, 1)
@@ -346,7 +353,7 @@ class SummaryGrid extends GridBase
             $form->select('sort_type', exmtrans("custom_view.sort"))
                 ->help(exmtrans('custom_view.help.sort_type'))
                 ->options(Enums\ViewColumnSort::transKeyArray('custom_view.column_sort_options'))
-                ->config('allowClear', false)->default(Enums\ViewColumnSort::ASC);
+                ->disableClear()->default(Enums\ViewColumnSort::ASC);
         })->setTableColumnWidth(4, 2, 2, 1, 2, 1)
         ->descriptionHtml(sprintf(exmtrans("custom_view.description_custom_view_summaries"), $manualUrl));
 

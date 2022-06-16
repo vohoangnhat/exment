@@ -105,6 +105,7 @@ class RouteServiceProvider extends ServiceProvider
             $router->post('login_setting/2factor-verify', 'LoginSettingController@auth_2factor_verify')->name('exment.2factor_verify');
             $router->post('login_setting/2factor', 'LoginSettingController@post2factor')->name('exment.post2factor');
             $router->post('login_setting/postglobal', 'LoginSettingController@postGlobal')->name('exment.postglobal');
+            $router->get("login_setting/loginOptionHtml", 'LoginSettingController@loginOptionHtml');
 
             $router->get('plugin/edit_code/{id}/getTree', 'PluginCodeController@getTreeData');
             $router->get('plugin/edit_code/{id}/selectFile', 'PluginCodeController@getFileEditForm');
@@ -129,6 +130,8 @@ class RouteServiceProvider extends ServiceProvider
             $router->get("workflow/{id}/filter-value", 'WorkflowController@getFilterValue');
             $router->post('workflow/{id}/activate', 'WorkflowController@activate');
             $router->get('workflow/{id}/activateModal', 'WorkflowController@activateModal');
+            $router->post('workflow/{id}/deactivate', 'WorkflowController@deactivate');
+            $router->get('workflow/{id}/deactivateModal', 'WorkflowController@deactivateModal');
 
             $router->get("loginuser/importModal", 'LoginUserController@importModal');
             $router->post("loginuser/import", 'LoginUserController@import');
@@ -419,6 +422,7 @@ class RouteServiceProvider extends ServiceProvider
     
                     // User, LoginUser --------------------------------------------------
                     $router->get("me", 'ApiController@me')->middleware(ApiScope::getScopeString($route['addScope'], ApiScope::ME));
+                    $router->get("avatar", 'ApiController@avatar')->middleware(ApiScope::getScopeString($route['addScope'], ApiScope::ME));
     
                     // User, Organization --------------------------------------------------
                     $router->get("user_organization/select", 'ApiController@userOrganizationSelect')->middleware(ApiScope::getScopeString($route['addScope'], ApiScope::VALUE_READ, ApiScope::VALUE_WRITE));

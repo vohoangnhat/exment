@@ -3,6 +3,7 @@
 namespace Exceedone\Exment\Model;
 
 use Exceedone\Exment\Enums\Permission;
+use Exceedone\Exment\Enums\SystemColumn;
 
 /**
  * Define short summary.
@@ -36,6 +37,7 @@ class Define
     public const API_FEATURE_TEST_APIKEY = 'API_FEATURE_TEST_APIKEY';
 
     public const MAX_SIZE_NUMBER = 1000000000000;
+    public const MAX_FLOAT_PRECISION = 14;
 
     public const SYSTEM_SETTING_NAME_VALUE = [
         'initialized' => ['type' => 'boolean', 'default' => '0'],
@@ -62,9 +64,12 @@ class Define
         'grid_pager_count' => ['type' => 'int', 'default' => '20', 'group' => 'advanced'],
         'datalist_pager_count' => ['type' => 'int', 'default' => '5', 'group' => 'advanced'],
         'data_submit_redirect' => ['type' => 'string', 'default' => null, 'group' => 'advanced'],
+        'header_user_info' => ['type' => 'array', 'default' => SystemColumn::CREATED_AT, 'group' => 'advanced'],
 
         // name is "flg", but array is OK.
         'grid_filter_disable_flg' => ['type' => 'array', 'default' => '', 'group' => 'advanced'] ,
+
+        'system_values_pos' => ['default' => 'top', 'group' => 'advanced'],
 
         'web_ip_filters' => ['default' => '', 'group' => 'advanced'] ,
         'api_ip_filters' => ['default' => '', 'group' => 'advanced'] ,

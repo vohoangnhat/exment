@@ -2,19 +2,20 @@
 
 namespace Exceedone\Exment\Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Collection;
+//use Exceedone\Exment\Database\Seeder\InstallSeeder;
+use Exceedone\Exment\Enums\ColumnType;
 use Exceedone\Exment\Model;
-use Exceedone\Exment\Model\CustomTable;
 use Exceedone\Exment\Model\CustomRelation;
+use Exceedone\Exment\Model\CustomTable;
 use Exceedone\Exment\Model\CustomValue;
 use Exceedone\Exment\Model\CustomView;
 use Exceedone\Exment\Model\LoginUser;
 use Exceedone\Exment\Model\System;
-use Exceedone\Exment\Enums\ColumnType;
 use Exceedone\Exment\Tests\TestDefine;
 use Exceedone\Exment\Tests\TestTrait;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Collection;
+use Tests\TestCase;
 
 class ImportExportTest extends TestCase
 {
@@ -31,19 +32,20 @@ class ImportExportTest extends TestCase
     {
         try {
             $this->initAllTest();
+            //$this->seed(InstallSeeder::class);
             $this->be(LoginUser::find(TestDefine::TESTDATA_USER_LOGINID_ADMIN));
             if ($export) {
                 $this->dirpath = storage_path(path_join_os('app', 'export', 'unittest'));
                 if (\File::exists($this->dirpath)) {
                     \File::deleteDirectory($this->dirpath);
                 }
-                \File::makeDirectory($this->dirpath, 0755, true);
+                \Exment::makeDirectory($this->dirpath);
             } else {
                 $import_path = storage_path(path_join_os('app', 'import', 'unittest'));
                 if (\File::exists($import_path)) {
                     \File::deleteDirectory($import_path);
                 }
-                \File::makeDirectory($import_path, 0755, true);
+                \Exment::makeDirectory($import_path);
                 $source_path = exment_package_path("tests/tmpfile/Feature/$target_name");
                 \File::copyDirectory($source_path, $import_path);
                 $this->dirpath = 'unittest';

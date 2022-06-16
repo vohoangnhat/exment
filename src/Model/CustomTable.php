@@ -16,6 +16,7 @@ use Exceedone\Exment\Enums\FormActionType;
 use Exceedone\Exment\Enums\MultisettingType;
 use Exceedone\Exment\Enums\NotifyTrigger;
 use Exceedone\Exment\Enums\ValueType;
+use Exceedone\Exment\Enums\ShowPositionType;
 use Exceedone\Exment\Revisionable\Revision;
 use Exceedone\Exment\Services\AuthUserOrgHelper;
 use Exceedone\Exment\Services\FormHelper;
@@ -274,6 +275,14 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
      */
     public function getPriorityForm($id = null)
     {
+        // get request
+        $request = request();
+        if (!is_null($request->input('formid'))) {
+            $suuid = $request->input('formid');
+            // if query has form id, set form.
+            return CustomForm::findBySuuid($suuid);
+        }
+
         $custom_value = $this->getValueModel($id);
 
         if (isset($custom_value)) {
@@ -1254,6 +1263,7 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
                 'executeSearch' => true, // if true, search $q . If false,  not filter.
                 'relationColumn' => null, // Linkage object. if has, filtering value.
                 'searchDocument' => false, // is search document.
+                'isApi' => false, // called from API
             ],
             $options
         );
@@ -1803,6 +1813,52 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
     }
 
     /**
+     * Filter all accessible users on this table.
+     */
+    public function filterAccessibleUsers($userIds) : \Illuminate\Support\Collection
+    {
+        if (is_nullorempty($userIds)) {
+            return collect();
+        }
+        
+        $accessibleUsers = $this->getAccessibleUserIds();
+ 
+        $result = collect();
+        foreach ($userIds as $user) {
+            if ($accessibleUsers->contains(function ($accessibleUser) use ($user) {
+                return $accessibleUser == $user;
+            })) {
+                $result->push($user);
+            }
+        }
+ 
+        return $result;
+    }
+
+    /**
+     * Filter all accessible orgs on this table.
+     */
+    public function filterAccessibleOrganizations($organizationIds) : \Illuminate\Support\Collection
+    {
+        if (is_nullorempty($organizationIds)) {
+            return collect();
+        }
+        
+        $accessibleOrganizations = $this->getAccessibleOrganizationIds();
+ 
+        $result = collect();
+        foreach ($organizationIds as $org) {
+            if ($accessibleOrganizations->contains(function ($accessibleOrganization) use ($org) {
+                return $accessibleOrganization == $org;
+            })) {
+                $result->push($org);
+            }
+        }
+ 
+        return $result;
+    }
+
+    /**
      * Get all accessible organizations on this table. (only get id, consider performance)
      * *Not check "loginuser"'s permission.
      */
@@ -2018,7 +2074,9 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
             $items->put($selected_custom_value->id, $selected_custom_value->label);
         });
 
-        return $items->unique();
+        return $items->unique(function ($item, $key) {
+            return $key;
+        });
     }
 
     /**
@@ -2732,7 +2790,8 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
             }
             
             // check custom table permission(system and table)
-            elseif (array_key_exists(Permission::CUSTOM_TABLE, $permission_details)) {
+            elseif (RoleType::SYSTEM == $role_type
+                && array_key_exists(Permission::CUSTOM_TABLE, $permission_details)) {
                 return true;
             }
 
@@ -3027,7 +3086,7 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
             return ErrorCode::PERMISSION_DENY();
         }
 
-        if (!$this->hasPermission(Permission::CUSTOM_VALUE_EXPORT)) {
+        if (!$this->hasPermission([Permission::CUSTOM_TABLE, Permission::CUSTOM_VALUE_EXPORT])) {
             return ErrorCode::PERMISSION_DENY();
         }
 
@@ -3049,7 +3108,7 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
             return ErrorCode::PERMISSION_DENY();
         }
 
-        if (!$this->hasPermission(Permission::CUSTOM_VALUE_IMPORT)) {
+        if (!$this->hasPermission([Permission::CUSTOM_TABLE, Permission::CUSTOM_VALUE_IMPORT])) {
             return ErrorCode::PERMISSION_DENY();
         }
 
@@ -3116,5 +3175,17 @@ class CustomTable extends ModelBase implements Interfaces\TemplateImporterInterf
     public function isOneRecord()
     {
         return $this->getOption('one_record_flg', false);
+    }
+
+    /**
+     * get show positon for system values
+     */
+    public function getSystemValuesPosition()
+    {
+        $positon = $this->getOption('system_values_pos', ShowPositionType::DEFAULT);
+        if ($positon == ShowPositionType::DEFAULT) {
+            $positon = System::system_values_pos() ?? ShowPositionType::TOP;
+        }
+        return $positon;
     }
 }

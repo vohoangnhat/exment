@@ -26,6 +26,9 @@ use Exceedone\Exment\Enums\ConditionType;
 use Exceedone\Exment\Enums\ColumnType;
 use Exceedone\Exment\Enums\Permission;
 use Exceedone\Exment\Enums\SystemColumn;
+use Exceedone\Exment\Enums\TextAlignType;
+use Exceedone\Exment\Enums\EditableUserInfoType;
+use Exceedone\Exment\Enums\SystemTableName;
 use Exceedone\Exment\Validator;
 use Illuminate\Validation\Rule;
 
@@ -249,7 +252,7 @@ class CustomColumnController extends AdminControllerTableBase
                 ->displayText(function ($val) {
                     return ColumnType::getHtml($val);
                 })->escape(false);
-            $form->internal('column_type')->default($column_type);
+            $form->hidden('column_type')->default($column_type);
         }
 
         $form->embeds('options', exmtrans("custom_column.options.header"), function ($form) use ($column_item, $id) {
@@ -274,12 +277,28 @@ class CustomColumnController extends AdminControllerTableBase
 
             $form->text('placeholder', exmtrans("custom_column.options.placeholder"))
                 ->help(exmtrans("custom_column.help.placeholder"));
+
+            $form->text('dropzone_title', exmtrans("custom_column.options.dropzone_title"))
+                ->attribute(['data-filter' => json_encode(['parent' => 1, 'key' => 'column_type', 'value' => ['file', 'image']])])
+                ->help(exmtrans("custom_column.help.dropzone_title"));
             
             $form->text('help', exmtrans("custom_column.options.help"))->help(exmtrans("custom_column.help.help"));
             
             $form->numberRange('min_width', 'max_width', exmtrans("custom_column.options.min_max_width"))
                 ->help(exmtrans("custom_column.help.min_max_width"))
                 ;
+
+            $form->select('text_align', exmtrans("custom_column.options.text_align"))
+                ->help(exmtrans("custom_column.help.text_align"))
+                ->options(TextAlignType::transArray('custom_column.align_type_options'));
+
+            if ($this->custom_table->table_name == SystemTableName::USER) {
+                $form->select('editable_userinfo', exmtrans("custom_column.editable_userinfo"))
+                    ->help(exmtrans("custom_column.help.editable_userinfo"))
+                    ->options(EditableUserInfoType::transArray('custom_column.editable_userinfo_options'))
+                    ->disableClear()
+                    ->default(EditableUserInfoType::VIEW);
+            }
 
             // setting for each settings of column_type. --------------------------------------------------
             // Form options area -- start

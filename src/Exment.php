@@ -27,6 +27,7 @@ use Encore\Admin\Admin;
 use Encore\Admin\Form\Field\UploadField;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Class Admin.
@@ -686,9 +687,7 @@ class Exment
             return $path;
         }
         $tmppath = getFullpath($path, Define::DISKNAME_ADMIN_TMP);
-        if (!\File::exists($tmppath)) {
-            \File::makeDirectory($tmppath, 0755, true);
-        }
+        \Exment::makeDirectory($tmppath);
 
         return $tmppath;
     }
@@ -771,7 +770,55 @@ class Exment
         }
         return intval($val);
     }
+
+    /**
+     * make directory(0775)
+     *
+     * @param string|null $path
+     * @return void
+     */
+    public function makeDirectory(?string $path, int $mode = 0775)
+    {
+        if (\File::exists($path)) {
+            return;
+        }
+        \File::makeDirectory($path, $mode, true);
+    }
     
+    /**
+     * make directory for disk(0775)
+     *
+     * @param string|null $path
+     * @return void
+     */
+    public function makeDirectoryDisk($disk, ?string $path, int $mode = 0775)
+    {
+        if (!$disk) {
+            return;
+        }
+        if ($disk->exists($path)) {
+            return;
+        }
+        $disk->makeDirectory($path, $mode, true);
+    }
+    
+
+    /**
+     * Get all of the directories within a given directory.
+     *
+     * @param  string  $directory
+     * @return array
+     */
+    public function allDirectories($directory)
+    {
+        $directories = [];
+
+        foreach (Finder::create()->in($directory)->directories()->sortByName() as $dir) {
+            $directories[] = $dir->getPathname();
+        }
+
+        return $directories;
+    }
 
     /**
      * Whether db is sqlserver.
@@ -990,5 +1037,43 @@ class Exment
         return $column_key . '?' . implode('&', collect($query)->map(function ($val, $key) {
             return $key . '=' . $val;
         })->toArray());
+    }
+
+    
+    /**
+     * Unique and merge custom value. Check same id and table.
+     *
+     * @return Collection
+     */
+    public static function uniqueCustomValues(...$collections) : Collection
+    {
+        $result = collect();
+        if (is_nullorempty($collections)) {
+            return $result;
+        }
+
+        // Add collection if unique.
+        $fulterFunc = function ($col) use (&$result) {
+            foreach ($col as $custom_value) {
+                // Check contains same table and id
+                if ($result->contains(function ($r) use ($custom_value) {
+                    return isMatchString($custom_value->custom_table_name, $r->custom_table_name)
+                        && isMatchString($custom_value->id, $r->id);
+                })) {
+                    continue;
+                }
+
+                // Add target value
+                $result->push($custom_value);
+            }
+        };
+
+        foreach ($collections as $collection) {
+            if (!is_nullorempty($collection)) {
+                $fulterFunc($collection);
+            }
+        }
+
+        return $result;
     }
 }

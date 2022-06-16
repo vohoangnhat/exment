@@ -19,6 +19,7 @@ use Exceedone\Exment\Enums\PluginEventTrigger;
 use Exceedone\Exment\Enums\ShareTrigger;
 use Exceedone\Exment\Enums\UrlTagType;
 use Exceedone\Exment\Enums\CustomOperationType;
+use Exceedone\Exment\Enums\WorkflowGetAuthorityType;
 use Exceedone\Exment\Services\AuthUserOrgHelper;
 
 abstract class CustomValue extends ModelBase
@@ -51,6 +52,12 @@ abstract class CustomValue extends ModelBase
      * if true, disable.
      */
     protected $disable_saved_event = false;
+
+    /**
+     * set value directly without processing.
+     * if true, skip saving event without revision.
+     */
+    protected $restore_revision = false;
 
     /**
      * saved notify.
@@ -203,7 +210,10 @@ abstract class CustomValue extends ModelBase
 
         $result = collect();
         foreach ($workflow_actions as $workflow_action) {
-            $result = $workflow_action->getAuthorityTargets($this)->merge($result);
+            $result = \Exment::uniqueCustomValues(
+                $result,
+                $workflow_action->getAuthorityTargets($this, WorkflowGetAuthorityType::CURRENT_WORK_USER)
+            );
         }
 
         return $result;
@@ -252,7 +262,7 @@ abstract class CustomValue extends ModelBase
      *
      * @param int $custom_relation_id
      * @param boolean $isCallAsParent
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany | \Illuminate\Database\Eloquent\Relations\MorphMany | \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany|\Illuminate\Database\Eloquent\Relations\MorphMany|\Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function getDynamicRelationValue(int $custom_relation_id, bool $isCallAsParent)
     {
@@ -397,6 +407,11 @@ abstract class CustomValue extends ModelBase
         $this->disable_saved_event = $disable_saved_event;
         return $this;
     }
+    public function restore_revision($restore_revision = true)
+    {
+        $this->restore_revision = $restore_revision;
+        return $this;
+    }
 
     protected static function boot()
     {
@@ -407,18 +422,20 @@ abstract class CustomValue extends ModelBase
                 return;
             }
             
-            $events = $model->exists ? CustomOperationType::UPDATE : CustomOperationType::CREATE;
-            // call create or update trigger operations
-            CustomOperation::operationExecuteEvent($events, $model);
+            if (!$model->restore_revision) {
+                $events = $model->exists ? CustomOperationType::UPDATE : CustomOperationType::CREATE;
+                // call create or update trigger operations
+                CustomOperation::operationExecuteEvent($events, $model);
 
-            // call saving trigger plugins
-            Plugin::pluginExecuteEvent(PluginEventTrigger::SAVING, $model->custom_table, [
-                'custom_table' => $model->custom_table,
-                'custom_value' => $model,
-            ]);
+                // call saving trigger plugins
+                Plugin::pluginExecuteEvent(PluginEventTrigger::SAVING, $model->custom_table, [
+                    'custom_table' => $model->custom_table,
+                    'custom_value' => $model,
+                ]);
 
-            // re-get field data --------------------------------------------------
-            $model->prepareValue();
+                // re-get field data --------------------------------------------------
+                $model->prepareValue();
+            }
 
             // prepare revision
             $model->preSave();
@@ -580,7 +597,7 @@ abstract class CustomValue extends ModelBase
         // https://github.com/z-song/laravel-admin/issues/1024
         // because on value edit display, if before upload file and not upload again, don't post value.
         $value = $this->value;
-        $original = json_decode_ex($this->getOriginal('value'), true);
+        $original = json_decode_ex($this->getRawOriginal('value'), true);
         // get  columns
         $custom_columns = $this->custom_table->custom_columns_cache;
 
@@ -1567,12 +1584,13 @@ abstract class CustomValue extends ModelBase
                 'mark' => null,
                 'value' => null,
                 'q' => $q,
+                'isApi' => false,
             ],
             $options
         );
 
         // if selected target column,
-        if (!isset($options['searchColumns'])) {
+        if (!isset($options['searchColumns']) && !$options['isApi']) {
             $options['searchColumns'] = $this->custom_table->getFreewordSearchColumns();
         }
 
@@ -1779,7 +1797,7 @@ abstract class CustomValue extends ModelBase
         }
 
         // if not has share data, return false
-        if (!$custom_table->hasPermission(Permission::CUSTOM_VALUE_SHARE)) {
+        if (!$custom_table->hasPermission([Permission::CUSTOM_TABLE, Permission::CUSTOM_VALUE_SHARE])) {
             return false;
         }
 
@@ -1810,5 +1828,78 @@ abstract class CustomValue extends ModelBase
             ->whereIn('id', $ids)
             ->get()
             ->unique();
+    }
+    
+    /**
+     * Filter all accessible users on this value.
+     */
+    public function filterAccessibleUsers($userIds) : \Illuminate\Support\Collection
+    {
+        if (is_nullorempty($userIds)) {
+            return collect();
+        }
+        
+        $accessibleUsers = $this->getAccessibleUsers();
+
+        $result = collect();
+        foreach ($userIds as $user) {
+            if ($accessibleUsers->contains(function ($accessibleUser) use ($user) {
+                return $accessibleUser->id == $user;
+            })) {
+                $result->push($user);
+            }
+        }
+
+        return $result;
+    }
+    
+
+    /**
+     * Get all accessible organization on this value. (get model)
+     */
+    public function getAccessibleOrganizations()
+    {
+        $custom_table = $this->custom_table;
+        $ids = $this->value_authoritable_organizations()->pluck('authoritable_target_id')->toArray();
+
+        // get custom table's organization ids(contains all table and permission role group)
+        $queryTable = AuthUserOrgHelper::getRoleOrganizationQueryTable($custom_table, Permission::AVAILABLE_ALL_CUSTOM_VALUE);
+
+        if (!is_nullorempty($queryTable)) {
+            $queryTable->withoutGlobalScope(CustomValueModelScope::class);
+
+            $tablename = getDBTableName(SystemTableName::ORGANIZATION);
+            $ids = array_merge($queryTable->pluck("$tablename.id")->toArray(), $ids);
+        }
+
+        // get real value
+        return getModelName(SystemTableName::ORGANIZATION)::query()
+            ->withoutGlobalScope(CustomValueModelScope::class)
+            ->whereIn('id', $ids)
+            ->get()
+            ->unique();
+    }
+    
+    /**
+     * Filter all accessible orgs on this value.
+     */
+    public function filterAccessibleOrganizations($organizationIds) : \Illuminate\Support\Collection
+    {
+        if (is_nullorempty($organizationIds)) {
+            return collect();
+        }
+        
+        $accessibleOrganizations = $this->getAccessibleOrganizations();
+
+        $result = collect();
+        foreach ($organizationIds as $org) {
+            if ($accessibleOrganizations->contains(function ($accessibleOrganization) use ($org) {
+                return $accessibleOrganization->id == $org;
+            })) {
+                $result->push($org);
+            }
+        }
+
+        return $result;
     }
 }
