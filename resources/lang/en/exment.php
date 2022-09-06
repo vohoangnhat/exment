@@ -2531,9 +2531,9 @@ return [
         'export' => [
             'success_message' => 'The export was successful. Directory path:%s',
         ],
-        'resetpassword' => [
+        'resetpassword1' => [
             'notify_password' => 'Executed password reset. A new password is : %s',
-            'success' => 'Password reset successfull!!!',
+            'success1' => 'Password reset successfull!!!',
         ],
     ],
     
